@@ -1,0 +1,61 @@
+services:
+  # Ollama LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Enable GPU support (comment out if no GPU available)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - agent-network
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Local Agent Application
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: local-agent
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      # Ollama API endpoint (using service name)
+      - OLLAMA_BASE_URL=http://ollama:11434/v1
+      - OLLAMA_MODEL=gpt-oss
+    volumes:
+      # Mount source code for development
+      - ./src:/app/src:ro
+      # Mount workspace directory for file operations
+      - ./workspace:/app/workspace
+    networks:
+      - agent-network
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    command: ["python", "src/main.py"]
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+    driver: local
+
