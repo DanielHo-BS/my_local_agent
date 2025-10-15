@@ -1,0 +1,11 @@
+[project]
+name = "my-local-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.17.0",
+    "httpx>=0.27.0",
+    "openai>=1.0.0",
+]
